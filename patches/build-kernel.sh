@@ -47,10 +47,14 @@ mkdir -p "${OUT_DIR}"
 make ARCH=arm64 O="${OUT_DIR}" CLANG_PREBUILTS_PATH="${CLANG_PREBUILTS_PATH}" merge_kirin990_defconfig
 
 echo "== adjust config"
-echo "== disable audio/modem subsystems (their sources need the vendor GCC chain)"
-RISKY='HISI_BALONG|BALONG|MODEM|MDRV|HUAWEI_AUDIO|VIRTUAL_VOICE|AUDIO|SND|HIFI|MAILBOX|VOICE|DSP|USB_PROXY_HCD|ESPE|TEE'
-for sym in $(grep -E "^CONFIG_(${RISKY})[A-Z0-9_]*=y" "${OUT_DIR}/.config" | sed 's/^CONFIG_//; s/=y$//'); do
-    scripts/config --file "${OUT_DIR}/.config" -d "$sym"
+echo "== disable the subsystems whose sources need the vendor GCC chain"
+# targeted only: audio / modem / usb-audio. TEE and the rest stay untouched --
+# some drivers use CONFIG_* string symbols as literals, so a blanket sweep breaks them.
+for sym in HISI_BALONG_MODEM HISI_BALONG_MODEM_HI3650 MODEM_DRIVER BALONG_ESPE \
+           HUAWEI_AUDIO VIRTUAL_VOICE_PROXY SOUND HIFI_IPC HIFI_MAILBOX \
+           HIFI_DSP_ONE_TRACK HIFI_VIR_DAI USB_PROXY_HCD USB_AUDIO_COMMON \
+           USB_AUDIO_POWER CODE_DSP_MISC CODEC_DSP_MISC; do
+    scripts/config --file "${OUT_DIR}/.config" -d "$sym" || true
 done
 make ARCH=arm64 O="${OUT_DIR}" CLANG_PREBUILTS_PATH="${CLANG_PREBUILTS_PATH}" olddefconfig
 
