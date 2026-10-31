@@ -51,8 +51,7 @@ echo "== disable only the subsystems that need the vendor GCC chain"
 # NOTE: HUAWEI_AUDIO must stay enabled -- it provides the fsa4480/get_phy_addr
 # symbols that other modules link against. Only virtual_voice_proxy fails to
 # compile (its mailbox ids are not in the published tree).
-for sym in HISI_BALONG_MODEM HISI_BALONG_MODEM_HI3650 MODEM_DRIVER BALONG_ESPE SOUND \
-           VIRTUAL_VOICE_PROXY; do
+for sym in HISI_BALONG_MODEM HISI_BALONG_MODEM_HI3650 MODEM_DRIVER BALONG_ESPE VIRTUAL_VOICE_PROXY; do
     scripts/config --file "${OUT_DIR}/.config" -d "$sym" || true
 done
 make ARCH=arm64 O="${OUT_DIR}" CLANG_PREBUILTS_PATH="${CLANG_PREBUILTS_PATH}" olddefconfig
