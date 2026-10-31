@@ -2,26 +2,18 @@ modem: add the private include paths for the platform_drivers entry
 
 --- a/Makefile
 +++ b/Makefile
-@@ -648,6 +648,23 @@
+@@ -648,6 +648,15 @@
  endif
  CLANG_FLAGS	+= -Werror=unknown-warning-option
  KBUILD_CFLAGS	+= $(CLANG_FLAGS)
 +
-+# Port build: the modem sources are entered through drivers/platform_drivers/,
-+# which does not carry the per-driver include paths of makefile_soc_modem.mk.
++# Port build: the modem tree is entered through drivers/platform_drivers/, which
++# does not carry the per-driver include paths of makefile_soc_modem.mk. Add every
++# directory that ships a modem/securec header, plus the vendor's warning policy
++# for the audio/hifi sources (clang >= 12 treats enum visibility as an error).
 +KBUILD_CFLAGS += -I$(srctree)/drivers/hisi/tzdriver
-+KBUILD_CFLAGS += -I$(srctree)/drivers/hisi/modem/drv/include
-+KBUILD_CFLAGS += -I$(srctree)/drivers/hisi/modem/drv/icc
-+KBUILD_CFLAGS += -I$(srctree)/drivers/hisi/modem/drv/balong_timer
-+KBUILD_CFLAGS += -I$(srctree)/drivers/hisi/modem/drv/hds
-+KBUILD_CFLAGS += -I$(srctree)/drivers/hisi/modem/drv/diag/cpm
-+KBUILD_CFLAGS += -I$(srctree)/drivers/hisi/modem/drv/diag/scm
-+KBUILD_CFLAGS += -I$(srctree)/drivers/hisi/modem/drv/socp/soft_decode
-+KBUILD_CFLAGS += -I$(srctree)/drivers/hisi/modem/tafnew/include
-+KBUILD_CFLAGS += -I$(srctree)/drivers/hisi/modem/tafnew/acore
-+KBUILD_CFLAGS += -I$(srctree)/drivers/hisi/modem/tafnew/acore/rnic
-+KBUILD_CFLAGS += -I$(srctree)/drivers/hisi/modem/include/drv/common
-+KBUILD_CFLAGS += -I$(srctree)/drivers/hisi/modem/include/adrv
++KBUILD_CFLAGS += $(addprefix -I,$(sort $(dir $(shell find $(srctree)/drivers/hisi/modem -name '*.h' 2>/dev/null))))
++KBUILD_CFLAGS += -Wno-error=visibility -Wno-visibility
 +
  KBUILD_AFLAGS	+= $(CLANG_FLAGS)
  export CLANG_FLAGS
