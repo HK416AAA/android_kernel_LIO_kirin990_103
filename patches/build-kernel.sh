@@ -47,7 +47,9 @@ mkdir -p "${OUT_DIR}"
 make ARCH=arm64 O="${OUT_DIR}" CLANG_PREBUILTS_PATH="${CLANG_PREBUILTS_PATH}" merge_kirin990_defconfig
 
 echo "== adjust config"
-scripts/config --file "${OUT_DIR}/.config" -d BALONG_ESPE || true
+scripts/config --file "${OUT_DIR}/.config" \
+    -d BALONG_ESPE -d HISI_BALONG_MODEM -d HISI_BALONG_MODEM_HI3650 \
+    -d MODEM_DRIVER -d SOUND || true
 make ARCH=arm64 O="${OUT_DIR}" CLANG_PREBUILTS_PATH="${CLANG_PREBUILTS_PATH}" olddefconfig
 
 echo "== export CONFIG_* as make variables"
