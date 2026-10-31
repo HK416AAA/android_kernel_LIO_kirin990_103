@@ -17,13 +17,21 @@ jobs:
           fetch-depth: 1
           submodules: recursive
 
+      - name: ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ runner.os }}-${{ github.repository }}-${{ hashFiles('patches/**') }}
+          restore-keys: |
+            ccache-${{ runner.os }}-${{ github.repository }}-
+
       - name: Install toolchain
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             clang-12 lld-12 llvm-12 \
             gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu \
-            build-essential bc flex bison libssl-dev libelf-dev \
+            ccache build-essential bc flex bison libssl-dev libelf-dev \
             python3 kmod cpio lz4 xz-utils zstd rsync git patch
           sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-12 200
           sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-12 200
