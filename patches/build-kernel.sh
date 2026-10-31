@@ -11,7 +11,7 @@ OUT_DIR="${OUT_DIR:-out}"
 JOBS="${JOBS:-$(nproc)}"
 
 echo "== applying port patches"
-for p in patches/0001-binder-async-sender-pid.patch patches/0002-rdr-no-ap-reset.patch; do
+for p in patches/0*.patch; do
     if git apply --check "$p" 2>/dev/null; then
         git apply "$p"; echo "   applied $(basename "$p")"
     elif patch -p1 --forward --dry-run < "$p" >/dev/null 2>&1; then
@@ -41,17 +41,10 @@ echo "== export CONFIG_* as make variables"
 # shellcheck disable=SC2046
 export $(grep -E '^CONFIG_[A-Za-z0-9_]+=y$' "${OUT_DIR}/.config" | tr -d '\r')
 
-MODEM_INC="-Idrivers/hisi/modem/drv/icc \
- -Idrivers/hisi/modem/drv/balong_timer \
- -Idrivers/hisi/modem/drv/hds \
- -Idrivers/hisi/modem/drv/diag/cpm \
- -Idrivers/hisi/tzdriver \
- -Idrivers/hisi/modem/drv/include"
 
 echo "== build"
 make -j"${JOBS}" ARCH=arm64 O="${OUT_DIR}" \
      CLANG_PREBUILTS_PATH="${CLANG_PREBUILTS_PATH}" \
-     KCFLAGS="${MODEM_INC}" \
      Image.gz Image
 
 echo "== artifacts"
