@@ -38,15 +38,26 @@ jobs:
           sudo update-alternatives --install /usr/bin/ld.lld ld.lld /usr/bin/ld.lld-12 200
           clang --version
 
-      - name: Fetch arm64 GCC 4.9
+      - name: Prepare gcc wrapper
         run: |
-          set -e
-          curl -fsSL "https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/+archive/refs/heads/master.tar.gz" -o /tmp/gcc49.tar.gz
-          mkdir -p "$RUNNER_TEMP/gcc49"
-          tar -xzf /tmp/gcc49.tar.gz -C "$RUNNER_TEMP/gcc49"
-          "$RUNNER_TEMP/gcc49/bin/aarch64-linux-android-gcc" --version | head -1
+          mkdir -p "$RUNNER_TEMP/ccwrap"
+          cat > "$RUNNER_TEMP/ccwrap/cc" <<'WRAP'
+          #!/bin/bash
+          args=()
+          for a in "$@"; do
+            case "$a" in
+              --target=*|--gcc-toolchain=*|--prefix=*|-Qunused-arguments|-mexecute-only|-mno-global-merge|-fno-addrsig|-no-integrated-as) ;;
+              *) args+=("$a") ;;
+            esac
+          done
+          exec aarch64-linux-gnu-gcc "${args[@]}"
+          WRAP
+          chmod +x "$RUNNER_TEMP/ccwrap/cc"
+          "$RUNNER_TEMP/ccwrap/cc" --version | head -1
 
       - name: Build kernel
+        env:
+          GCC_WRAPPER: ${{ runner.temp }}/ccwrap/cc
         run: |
           chmod +x patches/build-kernel.sh
           bash patches/build-kernel.sh
