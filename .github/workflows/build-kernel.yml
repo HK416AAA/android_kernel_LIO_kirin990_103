@@ -47,6 +47,7 @@ jobs:
           for a in "$@"; do
             case "$a" in
               --target=*|--gcc-toolchain=*|--prefix=*|-Qunused-arguments|-mexecute-only|-mno-global-merge|-fno-addrsig|-no-integrated-as) ;;
+              -Wno-error=*|-Werror=unknown-warning-option|-Wno-unknown-warning-option|-Wno-visibility) ;;
               *) args+=("$a") ;;
             esac
           done
