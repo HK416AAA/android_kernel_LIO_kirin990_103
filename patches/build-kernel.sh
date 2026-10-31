@@ -47,13 +47,12 @@ mkdir -p "${OUT_DIR}"
 make ARCH=arm64 O="${OUT_DIR}" CLANG_PREBUILTS_PATH="${CLANG_PREBUILTS_PATH}" merge_kirin990_defconfig
 
 echo "== adjust config"
-echo "== disable the subsystems whose sources need the vendor GCC chain"
-# targeted only: audio / modem / usb-audio. TEE and the rest stay untouched --
-# some drivers use CONFIG_* string symbols as literals, so a blanket sweep breaks them.
+echo "== disable only the subsystems that need the vendor GCC chain"
+# NOTE: HUAWEI_AUDIO must stay enabled -- it provides the fsa4480/get_phy_addr
+# symbols that other modules link against. Only virtual_voice_proxy fails to
+# compile (its mailbox ids are not in the published tree).
 for sym in HISI_BALONG_MODEM HISI_BALONG_MODEM_HI3650 MODEM_DRIVER BALONG_ESPE \
-           HUAWEI_AUDIO VIRTUAL_VOICE_PROXY SOUND HIFI_IPC HIFI_MAILBOX \
-           HIFI_DSP_ONE_TRACK HIFI_VIR_DAI USB_PROXY_HCD USB_AUDIO_COMMON \
-           USB_AUDIO_POWER CODE_DSP_MISC CODEC_DSP_MISC; do
+           VIRTUAL_VOICE_PROXY; do
     scripts/config --file "${OUT_DIR}/.config" -d "$sym" || true
 done
 make ARCH=arm64 O="${OUT_DIR}" CLANG_PREBUILTS_PATH="${CLANG_PREBUILTS_PATH}" olddefconfig
