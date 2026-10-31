@@ -1,21 +1,26 @@
-modem: add include paths and the user-variant macro for the port build
+modem/audio: include paths, user macro and clang diagnostics for the port build
 
 --- a/Makefile
 +++ b/Makefile
-@@ -648,6 +648,17 @@
+@@ -648,6 +648,22 @@
  endif
  CLANG_FLAGS	+= -Werror=unknown-warning-option
  KBUILD_CFLAGS	+= $(CLANG_FLAGS)
 +
-+# Port build: the modem tree is entered through drivers/platform_drivers/, which
-+# does not carry the per-driver include paths of makefile_soc_modem.mk. Add every
-+# directory that ships a modem header, define the user-variant macro (otherwise
-+# product_config.h pulls the unpublished *_eng.h headers), and relax the clang
-+# visibility diagnostics that the vendor builds with GCC.
++# Port build: the modem/audio sources are entered through directories that do not
++# carry all of the vendor include paths. Add every directory that ships a modem
++# header, define the user-variant macro (otherwise product_config.h pulls the
++# unpublished *_eng.h headers), supply the two USBAUDIO mailbox codes that are
++# missing from this tree, and relax the clang diagnostics the vendor builds with GCC.
 +KBUILD_CFLAGS += -I$(srctree)/drivers/hisi/tzdriver
 +KBUILD_CFLAGS += $(addprefix -I,$(sort $(dir $(shell find $(srctree)/drivers/hisi/modem -name '*.h' 2>/dev/null))))
 +KBUILD_CFLAGS += -DCHOOSE_MODEM_USER
++KBUILD_CFLAGS += -DMAILBOX_MAILCODE_ACPU_TO_HIFI_USBAUDIO=0x3a
++KBUILD_CFLAGS += -DMAILBOX_MAILCODE_HIFI_TO_ACPU_USBAUDIO=0x3b
 +KBUILD_CFLAGS += -Wno-error=visibility -Wno-visibility
++KBUILD_CFLAGS += -Wno-error=incompatible-function-pointer-types
++KBUILD_CFLAGS += -Wno-error=incompatible-pointer-types-discards-qualifiers
++KBUILD_CFLAGS += -Wno-error=incompatible-pointer-types
 +
  KBUILD_AFLAGS	+= $(CLANG_FLAGS)
  export CLANG_FLAGS
