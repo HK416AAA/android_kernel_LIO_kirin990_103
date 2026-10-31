@@ -1,0 +1,254 @@
+access_tokenid: add a minimal /dev/access_token_id for the HarmonyOS port
+
+diff --git a/drivers/accesstokenid/Kconfig b/drivers/accesstokenid/Kconfig
+new file mode 100644
+--- /dev/null
++++ b/drivers/accesstokenid/Kconfig
+@@ -0,0 +1,8 @@
++# SPDX-License-Identifier: GPL-2.0
++config ACCESS_TOKENID
++	bool "HarmonyOS access token id device"
++	default y
++	help
++	  Provides /dev/access_token_id, the per-process access token store used by
++	  the HarmonyOS access token kit. Port build: the public tree does not ship
++	  the vendor driver, this is a minimal replacement (token is kept per pid).
+diff --git a/drivers/accesstokenid/Makefile b/drivers/accesstokenid/Makefile
+new file mode 100644
+--- /dev/null
++++ b/drivers/accesstokenid/Makefile
+@@ -0,0 +1,2 @@
++# SPDX-License-Identifier: GPL-2.0
++obj-$(CONFIG_ACCESS_TOKENID)	+= access_tokenid.o
+diff --git a/drivers/accesstokenid/access_tokenid.h b/drivers/accesstokenid/access_tokenid.h
+new file mode 100644
+--- /dev/null
++++ b/drivers/accesstokenid/access_tokenid.h
+@@ -0,0 +1,51 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++#ifndef _ACCESS_TOKEN_ID_H
++#define _ACCESS_TOKEN_ID_H
++
++#include <linux/ioctl.h>
++#include <linux/types.h>
++
++#define ACCESS_TOKEN_ID_IOCTL_BASE      'A'
++#define MAX_PERM_GROUP_NUM 64
++
++enum {
++	GET_TOKEN_ID = 1,
++	SET_TOKEN_ID,
++	GET_FTOKEN_ID,
++	SET_FTOKEN_ID,
++	ADD_PERMISSIONS,
++	REMOVE_PERMISSIONS,
++	GET_PERMISSION,
++	SET_PERMISSION,
++	ACCESS_TOKENID_MAX_NR
++};
++
++typedef struct {
++	uint32_t token;
++	uint32_t op_code;
++	bool is_granted;
++} ioctl_set_get_perm_data;
++
++typedef struct {
++	uint32_t token;
++	uint32_t perm[MAX_PERM_GROUP_NUM];
++} ioctl_add_perm_data;
++
++#define ACCESS_TOKENID_GET_TOKENID \
++	_IOR(ACCESS_TOKEN_ID_IOCTL_BASE, GET_TOKEN_ID, unsigned long long)
++#define ACCESS_TOKENID_SET_TOKENID \
++	_IOW(ACCESS_TOKEN_ID_IOCTL_BASE, SET_TOKEN_ID, unsigned long long)
++#define ACCESS_TOKENID_GET_FTOKENID \
++	_IOR(ACCESS_TOKEN_ID_IOCTL_BASE, GET_FTOKEN_ID, unsigned long long)
++#define ACCESS_TOKENID_SET_FTOKENID \
++	_IOW(ACCESS_TOKEN_ID_IOCTL_BASE, SET_FTOKEN_ID, unsigned long long)
++#define ACCESS_TOKENID_ADD_PERMISSIONS \
++	_IOW(ACCESS_TOKEN_ID_IOCTL_BASE, ADD_PERMISSIONS, ioctl_add_perm_data)
++#define ACCESS_TOKENID_REMOVE_PERMISSIONS \
++	_IOW(ACCESS_TOKEN_ID_IOCTL_BASE, REMOVE_PERMISSIONS, uint32_t)
++#define ACCESS_TOKENID_GET_PERMISSION \
++	_IOW(ACCESS_TOKEN_ID_IOCTL_BASE, GET_PERMISSION, ioctl_set_get_perm_data)
++#define ACCESS_TOKENID_SET_PERMISSION \
++	_IOW(ACCESS_TOKEN_ID_IOCTL_BASE, SET_PERMISSION, ioctl_set_get_perm_data)
++
++#endif
+diff --git a/drivers/accesstokenid/access_tokenid.c b/drivers/accesstokenid/access_tokenid.c
+new file mode 100644
+--- /dev/null
++++ b/drivers/accesstokenid/access_tokenid.c
+@@ -0,0 +1,151 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * access_tokenid.c - minimal /dev/access_token_id for the HarmonyOS port.
++ *
++ * The vendor driver is not part of the published kernel tree, but the HarmonyOS
++ * userspace (access token kit) opens this device early. Tokens are kept per pid;
++ * fork inheritance is intentionally not implemented (bring-up build).
++ */
++#define pr_fmt(fmt) "access_token_id: " fmt
++
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/miscdevice.h>
++#include <linux/fs.h>
++#include <linux/slab.h>
++#include <linux/sched.h>
++#include <linux/spinlock.h>
++#include <linux/hashtable.h>
++#include <linux/uaccess.h>
++#include "access_tokenid.h"
++
++struct token_entry {
++	pid_t pid;
++	u64 token;
++	u64 first_token;
++	struct hlist_node link;
++};
++
++static DEFINE_HASHTABLE(g_tokens, 10);
++static DEFINE_SPINLOCK(g_lock);
++
++static struct token_entry *token_lookup(pid_t pid)
++{
++	struct token_entry *e;
++
++	hlist_for_each_entry(e, &g_tokens[hash_min(pid, HASH_BITS(g_tokens))], link) {
++		if (e->pid == pid)
++			return e;
++	}
++	return NULL;
++}
++
++static u64 token_get(pid_t pid, bool first)
++{
++	struct token_entry *e;
++	unsigned long flags;
++	u64 value = 0;
++
++	spin_lock_irqsave(&g_lock, flags);
++	e = token_lookup(pid);
++	if (e != NULL)
++		value = first ? e->first_token : e->token;
++	spin_unlock_irqrestore(&g_lock, flags);
++	return value;
++}
++
++static int token_set(pid_t pid, u64 value, bool first)
++{
++	struct token_entry *e;
++	struct token_entry *fresh;
++	unsigned long flags;
++
++	fresh = kzalloc(sizeof(*fresh), GFP_ATOMIC);
++	spin_lock_irqsave(&g_lock, flags);
++	e = token_lookup(pid);
++	if (e != NULL) {
++		if (first)
++			e->first_token = value;
++		else
++			e->token = value;
++	} else if (fresh != NULL) {
++		fresh->pid = pid;
++		fresh->token = first ? 0 : value;
++		fresh->first_token = first ? value : 0;
++		hlist_add_head(&fresh->link, &g_tokens[hash_min(pid, HASH_BITS(g_tokens))]);
++		fresh = NULL;
++	}
++	spin_unlock_irqrestore(&g_lock, flags);
++	kfree(fresh);
++	return 0;
++}
++
++static long access_tokenid_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
++{
++	void __user *uarg = (void __user *)arg;
++	u64 value = 0;
++	ioctl_set_get_perm_data perm;
++
++	(void)file;
++	switch (cmd) {
++	case ACCESS_TOKENID_GET_TOKENID:
++		value = token_get(current->tgid, false);
++		return copy_to_user(uarg, &value, sizeof(value)) ? -EFAULT : 0;
++	case ACCESS_TOKENID_SET_TOKENID:
++		if (copy_from_user(&value, uarg, sizeof(value)))
++			return -EFAULT;
++		return token_set(current->tgid, value, false);
++	case ACCESS_TOKENID_GET_FTOKENID:
++		value = token_get(current->tgid, true);
++		return copy_to_user(uarg, &value, sizeof(value)) ? -EFAULT : 0;
++	case ACCESS_TOKENID_SET_FTOKENID:
++		if (copy_from_user(&value, uarg, sizeof(value)))
++			return -EFAULT;
++		return token_set(current->tgid, value, true);
++	case ACCESS_TOKENID_ADD_PERMISSIONS:
++	case ACCESS_TOKENID_REMOVE_PERMISSIONS:
++		return 0;
++	case ACCESS_TOKENID_GET_PERMISSION:
++		if (copy_from_user(&perm, uarg, sizeof(perm)))
++			return -EFAULT;
++		perm.is_granted = true;
++		return copy_to_user(uarg, &perm, sizeof(perm)) ? -EFAULT : 0;
++	case ACCESS_TOKENID_SET_PERMISSION:
++		return 0;
++	default:
++		return -EINVAL;
++	}
++}
++
++static const struct file_operations access_tokenid_fops = {
++	.owner = THIS_MODULE,
++	.unlocked_ioctl = access_tokenid_ioctl,
++	.compat_ioctl = access_tokenid_ioctl,
++};
++
++static struct miscdevice access_tokenid_dev = {
++	.minor = MISC_DYNAMIC_MINOR,
++	.name = "access_token_id",
++	.fops = &access_tokenid_fops,
++	.mode = 0666,
++};
++
++static int __init access_tokenid_init(void)
++{
++	int ret = misc_register(&access_tokenid_dev);
++
++	if (ret != 0)
++		pr_err("misc_register failed: %d\n", ret);
++	else
++		pr_info("ready\n");
++	return ret;
++}
++
++static void __exit access_tokenid_exit(void)
++{
++	misc_deregister(&access_tokenid_dev);
++}
++
++module_init(access_tokenid_init);
++module_exit(access_tokenid_exit);
++MODULE_LICENSE("GPL v2");
+--- a/drivers/Kconfig
++++ b/drivers/Kconfig
+@@ -12,6 +12,7 @@
+ 
+ 
+ source "drivers/base/Kconfig"
++source "drivers/accesstokenid/Kconfig"
+ 
+ source "drivers/bus/Kconfig"
+ 
+--- a/drivers/Makefile
++++ b/drivers/Makefile
+@@ -8,6 +8,7 @@
+ 
+ obj-y				+= irqchip/
+ obj-y				+= bus/
++obj-$(CONFIG_ACCESS_TOKENID)	+= accesstokenid/
+ 
+ obj-$(CONFIG_GENERIC_PHY)	+= phy/
+ 
