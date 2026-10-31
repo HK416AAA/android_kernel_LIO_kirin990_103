@@ -1,0 +1,13 @@
+platform_source: skip the audio sources for the clang port build
+
+--- a/platform_source/Makefile
++++ b/platform_source/Makefile
+@@ -5,7 +5,7 @@
+ obj-y += smart/
+ obj-y += ai/
+ obj-y += maligpu/
+-obj-y += audio/
++# obj-y += audio/   # port build: the hifi/IPC sources only build with the vendor GCC chain
+ obj-y += camera/
+ obj-y += display/
+ obj-y += isp/
