@@ -1,0 +1,9 @@
+audio: compile the hifi ipcm sources with gcc through a flag-stripping wrapper
+
+--- a/platform_source/audio/drivers/hifi_mailbox/ipcm/Makefile
++++ b/platform_source/audio/drivers/hifi_mailbox/ipcm/Makefile
+@@ -1,2 +1,4 @@
++# Port build: bsp_ipc.c uses enum types in prototypes, which clang rejects.
++CC := $(GCC_WRAPPER)
+ GCOV_PROFILE := $(CONFIG_GCOV_KERNEL)
+ EXTRA_CFLAGS += -I$(srctree)/platform_source/audio/drivers/hifi_mailbox/mailbox/
