@@ -1,0 +1,50 @@
+name: build-kernel
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "patches/**"
+      - ".github/workflows/build-kernel.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            clang-12 lld-12 llvm-12 \
+            gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu \
+            build-essential bc flex bison libssl-dev libelf-dev \
+            python3 kmod cpio lz4 xz-utils zstd rsync git patch
+          sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-12 200
+          sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-12 200
+          sudo update-alternatives --install /usr/bin/ld.lld ld.lld /usr/bin/ld.lld-12 200
+          clang --version
+
+      - name: Build kernel
+        run: |
+          chmod +x patches/build-kernel.sh
+          bash patches/build-kernel.sh
+
+      - name: Collect artifacts
+        run: |
+          mkdir -p artifacts
+          cp out/arch/arm64/boot/Image.gz artifacts/ 2>/dev/null || true
+          cp out/arch/arm64/boot/Image artifacts/ 2>/dev/null || true
+          cp out/.config artifacts/kernel.config 2>/dev/null || true
+          ls -l artifacts
+          ( cd artifacts && sha256sum * > SHA256SUMS.txt ) || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kernel-image-kirin990
+          path: artifacts/
+          retention-days: 7
