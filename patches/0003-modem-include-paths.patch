@@ -1,20 +1,21 @@
-modem: include paths and the user-variant macro for the port build
+modem: include paths, user macro and clang diagnostics for the port build
 
 --- a/Makefile
 +++ b/Makefile
-@@ -648,6 +648,16 @@
+@@ -648,6 +648,17 @@
  endif
  CLANG_FLAGS	+= -Werror=unknown-warning-option
  KBUILD_CFLAGS	+= $(CLANG_FLAGS)
 +
-+# Port build: the modem sources are entered through directories that do not carry
-+# the vendor include paths. Add every directory that ships a modem header and
-+# define the user-variant macro (otherwise product_config.h pulls the unpublished
-+# *_eng.h headers). Keep the clang diagnostics the vendor builds with GCC relaxed.
++# Port build: modem include paths, user-variant macro and the clang diagnostics
++# that the vendor builds with GCC.
 +KBUILD_CFLAGS += -I$(srctree)/drivers/hisi/tzdriver
 +KBUILD_CFLAGS += $(addprefix -I,$(sort $(dir $(shell find $(srctree)/drivers/hisi/modem -name '*.h' 2>/dev/null))))
 +KBUILD_CFLAGS += -DCHOOSE_MODEM_USER
 +KBUILD_CFLAGS += -Wno-error=visibility -Wno-visibility
++KBUILD_CFLAGS += -Wno-error=incompatible-function-pointer-types
++KBUILD_CFLAGS += -Wno-error=incompatible-pointer-types-discards-qualifiers
++KBUILD_CFLAGS += -Wno-error=incompatible-pointer-types
 +
  KBUILD_AFLAGS	+= $(CLANG_FLAGS)
  export CLANG_FLAGS
