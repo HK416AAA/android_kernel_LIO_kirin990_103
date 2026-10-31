@@ -1,18 +1,20 @@
-modem: add the private include paths for the platform_drivers entry
+modem: add include paths and the user-variant macro for the port build
 
 --- a/Makefile
 +++ b/Makefile
-@@ -648,6 +648,15 @@
+@@ -648,6 +648,17 @@
  endif
  CLANG_FLAGS	+= -Werror=unknown-warning-option
  KBUILD_CFLAGS	+= $(CLANG_FLAGS)
 +
 +# Port build: the modem tree is entered through drivers/platform_drivers/, which
 +# does not carry the per-driver include paths of makefile_soc_modem.mk. Add every
-+# directory that ships a modem/securec header, plus the vendor's warning policy
-+# for the audio/hifi sources (clang >= 12 treats enum visibility as an error).
++# directory that ships a modem header, define the user-variant macro (otherwise
++# product_config.h pulls the unpublished *_eng.h headers), and relax the clang
++# visibility diagnostics that the vendor builds with GCC.
 +KBUILD_CFLAGS += -I$(srctree)/drivers/hisi/tzdriver
 +KBUILD_CFLAGS += $(addprefix -I,$(sort $(dir $(shell find $(srctree)/drivers/hisi/modem -name '*.h' 2>/dev/null))))
++KBUILD_CFLAGS += -DCHOOSE_MODEM_USER
 +KBUILD_CFLAGS += -Wno-error=visibility -Wno-visibility
 +
  KBUILD_AFLAGS	+= $(CLANG_FLAGS)
