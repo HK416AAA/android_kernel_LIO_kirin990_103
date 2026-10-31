@@ -1,0 +1,19 @@
+binder: report the sender pid of one-way transactions (OpenHarmony)
+
+The vendor tree already tracks it as t->async_from_pid
+(CONFIG_BINDER_TRANSACTION_PROC_BRIEF); only the read side returned 0.
+
+--- a/drivers/android/binder.c
++++ b/drivers/android/binder.c
+@@ -5344,9 +5344,10 @@
+ 			binder_inherit_vip_prio(thread, t_from, t->flags & TF_ONE_WAY);
+ #endif
+ 			trace_android_vh_sync_txn_recvd(thread->task, t_from->task);
+ 		} else {
+-			trd->sender_pid = 0;
++			/* OpenHarmony: report the sender of one-way transactions */
++			trd->sender_pid = t->async_from_pid;
+ 		}
+ 
+ 		ret = binder_apply_fd_fixups(proc, t);
+ 		if (ret) {
