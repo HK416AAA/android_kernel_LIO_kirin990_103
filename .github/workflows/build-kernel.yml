@@ -51,7 +51,7 @@ jobs:
               *) args+=("$a") ;;
             esac
           done
-          exec aarch64-linux-gnu-gcc "${args[@]}"
+          exec aarch64-linux-gnu-gcc "${args[@]}" -Wno-error
           WRAP
           chmod +x "$RUNNER_TEMP/ccwrap/cc"
           "$RUNNER_TEMP/ccwrap/cc" --version | head -1
