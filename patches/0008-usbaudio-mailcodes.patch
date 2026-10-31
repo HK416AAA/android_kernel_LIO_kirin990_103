@@ -1,0 +1,66 @@
+usbaudio: use the audio mailbox codes that exist in this tree
+
+--- a/sound/usb/usbaudio_mailbox/usbaudio_mailbox.c
++++ b/sound/usb/usbaudio_mailbox/usbaudio_mailbox.c
+@@ -89,5 +89,5 @@
+ 
+ #ifdef CONFIG_HIFI_MAILBOX
+-	ret = DRV_MAILBOX_SENDMAIL(MAILBOX_MAILCODE_ACPU_TO_HIFI_USBAUDIO, pmsg_body, msg_len);
++	ret = DRV_MAILBOX_SENDMAIL(MAILBOX_MAILCODE_ACPU_TO_HIFI_AUDIO, pmsg_body, msg_len);
+ 	if (ret != 0)
+ 		AUDIO_LOGE("usbaudio channel send mail failed, ret: %u", ret);
+@@ -183,9 +183,9 @@
+ 
+ #ifdef CONFIG_HIFI_MAILBOX
+-	ret = DRV_MAILBOX_REGISTERRECVFUNC(MAILBOX_MAILCODE_HIFI_TO_ACPU_USBAUDIO,
++	ret = DRV_MAILBOX_REGISTERRECVFUNC(MAILBOX_MAILCODE_HIFI_TO_ACPU_AUDIO,
+ 		receive_func, NULL);
+ 	if (ret != 0) {
+ 		AUDIO_LOGE("register receive func error, ret: %d, mailcode: 0x%x",
+-			ret, MAILBOX_MAILCODE_HIFI_TO_ACPU_USBAUDIO);
++			ret, MAILBOX_MAILCODE_HIFI_TO_ACPU_AUDIO);
+ 		return ERROR;
+ 	}
+@@ -199,9 +199,9 @@
+ 
+ #ifdef CONFIG_HIFI_MAILBOX
+-	ret = DRV_MAILBOX_REGISTERRECVFUNC(MAILBOX_MAILCODE_HIFI_TO_ACPU_USBAUDIO,
++	ret = DRV_MAILBOX_REGISTERRECVFUNC(MAILBOX_MAILCODE_HIFI_TO_ACPU_AUDIO,
+ 		NULL, NULL);
+ 	if (ret != 0) {
+ 		AUDIO_LOGE("unregister receive func error, ret: %d, mailcode: 0x%x",
+-			ret, MAILBOX_MAILCODE_HIFI_TO_ACPU_USBAUDIO);
++			ret, MAILBOX_MAILCODE_HIFI_TO_ACPU_AUDIO);
+ 		return ERROR;
+ 	}
+--- a/platform_source/basicplatform/drivers/usb/proxy-hcd/hifi-usb-mailbox.c
++++ b/platform_source/basicplatform/drivers/usb/proxy-hcd/hifi-usb-mailbox.c
+@@ -65,14 +65,14 @@
+ 	} else {
+ 		/*
+-		 * Micro "MAILBOX_MAILCODE_HIFI_TO_ACPU_USB" defined in
++		 * Micro "MAILBOX_MAILCODE_HIFI_TO_ACPU_AUDIO" defined in
+ 		 * drv_mailbox_cfg.h
+ 		 */
+ 		mailbox_ret = DRV_MAILBOX_REGISTERRECVFUNC(
+-				MAILBOX_MAILCODE_HIFI_TO_ACPU_USB,
++				MAILBOX_MAILCODE_HIFI_TO_ACPU_AUDIO,
+ 				pisr, NULL);
+ 		if (mailbox_ret != 0) {
+ 			ret = -ENOENT;
+ 			pr_err("register isr for usb channel failed, ret:%d,0x%x\n",
+-				ret, MAILBOX_MAILCODE_HIFI_TO_ACPU_USB);
++				ret, MAILBOX_MAILCODE_HIFI_TO_ACPU_AUDIO);
+ 		}
+ 	}
+@@ -97,8 +97,8 @@
+ 
+ 	/*
+-	 * Micro "MAILBOX_MAILCODE_ACPU_TO_HIFI_USB_RT" defined in
++	 * Micro "MAILBOX_MAILCODE_ACPU_TO_HIFI_AUDIO" defined in
+ 	 * drv_mailbox_cfg.h
+ 	 */
+-	return mailbox_send_msg(MAILBOX_MAILCODE_ACPU_TO_HIFI_USB_RT,
++	return mailbox_send_msg(MAILBOX_MAILCODE_ACPU_TO_HIFI_AUDIO,
+ 		op_msg, len);
+ }
