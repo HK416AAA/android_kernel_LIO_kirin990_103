@@ -26,7 +26,14 @@ if [ ! -e /usr/bin/clang++ ]; then sudo ln -sf /usr/bin/clang++-12 /usr/bin/clan
 for t in llvm-ar llvm-nm llvm-objcopy llvm-objdump llvm-readelf llvm-strip; do
     if [ ! -e "/usr/bin/$t" ]; then sudo ln -sf "/usr/bin/$t-12" "/usr/bin/$t"; fi
 done
-export CROSS_COMPILE=aarch64-linux-gnu-
+if [ -x "${RUNNER_TEMP:-/tmp}/gcc49/bin/aarch64-linux-android-gcc" ]; then
+    export PATH="${RUNNER_TEMP:-/tmp}/gcc49/bin:${PATH}"
+    export CROSS_COMPILE=aarch64-linux-android-
+    echo "   using vendor GCC 4.9 from ${RUNNER_TEMP:-/tmp}/gcc49"
+else
+    export CROSS_COMPILE=aarch64-linux-gnu-
+    echo "   using distro cross gcc"
+fi
 CLANG_PREBUILTS_PATH=/usr/
 
 
