@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Build android_kernel_LIO_kirin990_103 (5.10.43) with the HarmonyOS port patches.
-# The vendor defconfig enables the Balong modem drivers, whose private headers are
-# not part of the public tree, so the subsystem is switched off for this build.
+# Same vendor-build-wrapper behaviour as the Kirin 9000 script: the CONFIG_*
+# symbols are exported so the makefile conditionals pick the right include paths.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -29,13 +29,13 @@ done
 export CROSS_COMPILE=aarch64-linux-gnu-
 CLANG_PREBUILTS_PATH=/usr/
 
-echo "== configure (vendor defconfig, modem disabled)"
+echo "== configure (vendor defconfig)"
 mkdir -p "${OUT_DIR}"
 make ARCH=arm64 O="${OUT_DIR}" CLANG_PREBUILTS_PATH="${CLANG_PREBUILTS_PATH}" merge_kirin990_defconfig
-scripts/config --file "${OUT_DIR}/.config" \
-    -d HISI_BALONG_MODEM -d HISI_BALONG_MODEM_HI3650 \
-    -d TEECD_AUTH -d SEC_CALL -d ICC_BALONG || true
-make ARCH=arm64 O="${OUT_DIR}" CLANG_PREBUILTS_PATH="${CLANG_PREBUILTS_PATH}" olddefconfig
+
+echo "== export CONFIG_* as make variables"
+# shellcheck disable=SC2046
+export $(grep -E '^CONFIG_[A-Za-z0-9_]+=y$' "${OUT_DIR}/.config" | tr -d '\r')
 
 echo "== build"
 make -j"${JOBS}" ARCH=arm64 O="${OUT_DIR}" CLANG_PREBUILTS_PATH="${CLANG_PREBUILTS_PATH}" Image.gz Image
