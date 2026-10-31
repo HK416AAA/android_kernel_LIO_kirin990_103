@@ -29,6 +29,19 @@ done
 export CROSS_COMPILE=aarch64-linux-gnu-
 CLANG_PREBUILTS_PATH=/usr/
 
+
+echo "== ccache wrapper"
+WRAP="${RUNNER_TEMP:-/tmp}/clangwrap"
+mkdir -p "$WRAP"
+for tool in clang clang++ ld.lld llvm-ar llvm-nm llvm-objcopy llvm-objdump llvm-readelf llvm-strip; do
+    case "$tool" in
+        clang|clang++) printf '#!/bin/sh\nexec ccache /usr/bin/%s "$@"\n' "$tool" > "$WRAP/$tool" ;;
+        *)             printf '#!/bin/sh\nexec /usr/bin/%s "$@"\n' "$tool" > "$WRAP/$tool" ;;
+    esac
+    chmod +x "$WRAP/$tool"
+done
+export PATH="$WRAP:$PATH"
+
 echo "== configure (vendor defconfig)"
 mkdir -p "${OUT_DIR}"
 make ARCH=arm64 O="${OUT_DIR}" CLANG_PREBUILTS_PATH="${CLANG_PREBUILTS_PATH}" merge_kirin990_defconfig
@@ -43,7 +56,7 @@ export $(grep -E '^CONFIG_[A-Za-z0-9_]+=y$' "${OUT_DIR}/.config" | tr -d '\r')
 
 
 echo "== build"
-make -j"${JOBS}" ARCH=arm64 O="${OUT_DIR}" \
+make -k -j"${JOBS}" ARCH=arm64 O="${OUT_DIR}" \
      CLANG_PREBUILTS_PATH="${CLANG_PREBUILTS_PATH}" \
      Image.gz Image
 
