@@ -49,7 +49,8 @@ make ARCH=arm64 O="${OUT_DIR}" CLANG_PREBUILTS_PATH="${CLANG_PREBUILTS_PATH}" me
 echo "== adjust config"
 scripts/config --file "${OUT_DIR}/.config" \
     -d BALONG_ESPE -d HISI_BALONG_MODEM -d HISI_BALONG_MODEM_HI3650 \
-    -d MODEM_DRIVER -d SOUND || true
+    -d MODEM_DRIVER -d SOUND -d HUAWEI_AUDIO -d VIRTUAL_VOICE_PROXY \
+    -d HIFI_IPC -d HIFI_MAILBOX -d HIFI_DSP_ONE_TRACK || true
 make ARCH=arm64 O="${OUT_DIR}" CLANG_PREBUILTS_PATH="${CLANG_PREBUILTS_PATH}" olddefconfig
 
 echo "== export CONFIG_* as make variables"
