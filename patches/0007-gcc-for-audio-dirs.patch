@@ -1,16 +1,18 @@
-audio: build the hifi/mailbox sources with the vendor GCC toolchain
+audio: build the hifi/mailbox sources with gcc through a flag-stripping wrapper
 
 --- a/platform_source/audio/Makefile
 +++ b/platform_source/audio/Makefile
-@@ -1,2 +1,4 @@
-+# Port build: these sources only compile with the vendor GCC chain.
-+CC := $(CROSS_COMPILE)gcc
+@@ -1,2 +1,5 @@
++# Port build: these sources are GCC-only (clang rejects them). CC points at the
++# wrapper that strips clang-specific flags before calling the host gcc.
++CC := $(GCC_WRAPPER)
  
  obj-y += drivers/
 --- a/platform_source/basicplatform/drivers/usb/proxy-hcd/Makefile
 +++ b/platform_source/basicplatform/drivers/usb/proxy-hcd/Makefile
-@@ -1,2 +1,4 @@
-+# Port build: these sources only compile with the vendor GCC chain.
-+CC := $(CROSS_COMPILE)gcc
+@@ -1,2 +1,5 @@
++# Port build: these sources are GCC-only (clang rejects them). CC points at the
++# wrapper that strips clang-specific flags before calling the host gcc.
++CC := $(GCC_WRAPPER)
  ifeq ($(CONFIG_HIFI_MAILBOX), y)
  EXTRA_CFLAGS += -I$(srctree)/platform_source/audio/drivers/hifi_mailbox/mailbox
