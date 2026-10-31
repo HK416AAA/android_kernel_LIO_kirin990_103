@@ -16,3 +16,19 @@ audio: build the hifi/mailbox sources with gcc through a flag-stripping wrapper
 +CC := $(GCC_WRAPPER)
  ifeq ($(CONFIG_HIFI_MAILBOX), y)
  EXTRA_CFLAGS += -I$(srctree)/platform_source/audio/drivers/hifi_mailbox/mailbox
+--- a/sound/usb/usbaudio_mailbox/Makefile
++++ b/sound/usb/usbaudio_mailbox/Makefile
+@@ -1,2 +1,5 @@
++# Port build: these sources are GCC-only (clang rejects them). CC points at the
++# wrapper that strips clang-specific flags before calling the host gcc.
++CC := $(GCC_WRAPPER)
+ GCOV_PROFILE := $(CONFIG_GCOV_KERNEL)
+ subdir-ccflags-y += -Wall -Werror
+--- a/sound/soc/platforms/Makefile
++++ b/sound/soc/platforms/Makefile
+@@ -1,2 +1,5 @@
++# Port build: these sources are GCC-only (clang rejects them). CC points at the
++# wrapper that strips clang-specific flags before calling the host gcc.
++CC := $(GCC_WRAPPER)
+ GCOV_PROFILE := $(CONFIG_GCOV_KERNEL)
+ subdir-ccflags-y += -Wall -Werror
