@@ -1,13 +1,15 @@
-platform_source: skip the audio sources for the clang port build
+platform_source: keep the audio directory but build nothing from it
 
---- a/platform_source/Makefile
-+++ b/platform_source/Makefile
-@@ -5,7 +5,7 @@
- obj-y += smart/
- obj-y += ai/
- obj-y += maligpu/
--obj-y += audio/
-+# obj-y += audio/   # port build: the hifi/IPC sources only build with the vendor GCC chain
- obj-y += camera/
- obj-y += display/
- obj-y += isp/
+--- a/platform_source/audio/Makefile
++++ b/platform_source/audio/Makefile
+@@ -1,6 +1,4 @@
+-
+-obj-y += drivers/
+-obj-y += sound/
+-
+-menuconfig:
+-	cd ../..;make ARCH=arm64 menuconfig KBUILD_KCONFIG=platform_source/audio/Kconfig KCONFIG_CONFIG=platform_source/audio/.config
++# Port build: the hifi/IPC sources in this subtree only compile with the
++# vendor GCC toolchain, so the directory is kept (the parent still expects
++# built-in.a) but builds nothing.
++obj-y :=
