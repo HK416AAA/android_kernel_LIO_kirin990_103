@@ -1,0 +1,16 @@
+audio: build the hifi/mailbox sources with the vendor GCC toolchain
+
+--- a/platform_source/audio/Makefile
++++ b/platform_source/audio/Makefile
+@@ -1,2 +1,4 @@
++# Port build: these sources only compile with the vendor GCC chain.
++CC := $(CROSS_COMPILE)gcc
+ 
+ obj-y += drivers/
+--- a/platform_source/basicplatform/drivers/usb/proxy-hcd/Makefile
++++ b/platform_source/basicplatform/drivers/usb/proxy-hcd/Makefile
+@@ -1,2 +1,4 @@
++# Port build: these sources only compile with the vendor GCC chain.
++CC := $(CROSS_COMPILE)gcc
+ ifeq ($(CONFIG_HIFI_MAILBOX), y)
+ EXTRA_CFLAGS += -I$(srctree)/platform_source/audio/drivers/hifi_mailbox/mailbox
