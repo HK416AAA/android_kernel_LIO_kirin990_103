@@ -1,0 +1,28 @@
+modem: add the private include paths for the platform_drivers entry
+
+--- a/Makefile
++++ b/Makefile
+@@ -648,6 +648,23 @@
+ endif
+ CLANG_FLAGS	+= -Werror=unknown-warning-option
+ KBUILD_CFLAGS	+= $(CLANG_FLAGS)
++
++# Port build: the modem sources are entered through drivers/platform_drivers/,
++# which does not carry the per-driver include paths of makefile_soc_modem.mk.
++KBUILD_CFLAGS += -I$(srctree)/drivers/hisi/tzdriver
++KBUILD_CFLAGS += -I$(srctree)/drivers/hisi/modem/drv/include
++KBUILD_CFLAGS += -I$(srctree)/drivers/hisi/modem/drv/icc
++KBUILD_CFLAGS += -I$(srctree)/drivers/hisi/modem/drv/balong_timer
++KBUILD_CFLAGS += -I$(srctree)/drivers/hisi/modem/drv/hds
++KBUILD_CFLAGS += -I$(srctree)/drivers/hisi/modem/drv/diag/cpm
++KBUILD_CFLAGS += -I$(srctree)/drivers/hisi/modem/drv/diag/scm
++KBUILD_CFLAGS += -I$(srctree)/drivers/hisi/modem/drv/socp/soft_decode
++KBUILD_CFLAGS += -I$(srctree)/drivers/hisi/modem/tafnew/include
++KBUILD_CFLAGS += -I$(srctree)/drivers/hisi/modem/tafnew/acore
++KBUILD_CFLAGS += -I$(srctree)/drivers/hisi/modem/tafnew/acore/rnic
++KBUILD_CFLAGS += -I$(srctree)/drivers/hisi/modem/include/drv/common
++KBUILD_CFLAGS += -I$(srctree)/drivers/hisi/modem/include/adrv
++
+ KBUILD_AFLAGS	+= $(CLANG_FLAGS)
+ export CLANG_FLAGS
+ endif
