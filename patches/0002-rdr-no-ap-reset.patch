@@ -1,0 +1,30 @@
+rdr: keep the AP alive by default (port friendly)
+
+--- a/platform_source/basicplatform/drivers/mntn/blackbox/rdr_module_core.c
++++ b/platform_source/basicplatform/drivers/mntn/blackbox/rdr_module_core.c
+@@ -324,8 +324,10 @@
+ 	BB_PRINT_PN("current mask:[0x%llx]\n", current_mask);
+ 	BB_PRINT_END();
+ 	return current_mask;
+ }
++
++int rdr_ap_reset_enable;   /* 0 = keep the port alive, 1 = vendor behaviour */
+ 
+ void rdr_notify_module_reset(u32 modid, struct rdr_exception_info_s *e_info)
+ {
+ 	struct rdr_module_ops_s *p_module_ops = NULL;
+@@ -369,9 +371,13 @@
+ 				((rdr_reboot_later_flag || (mask & p_module_ops->s_core_id)) &&
+ 				rdr_syserr_list_empty())) {
+ 				BB_PRINT_PN("reboot now!\n");
+ 				spin_unlock_irqrestore(&__rdr_module_ops_list_lock, lock_flag);
+-				(*(p_module_ops->s_ops.ops_reset)) (modid, e_info->e_exce_type, e_info->e_from_core);
++				if (rdr_ap_reset_enable) {
++					(*(p_module_ops->s_ops.ops_reset)) (modid, e_info->e_exce_type, e_info->e_from_core);
++				} else {
++					BB_PRINT_PN("AP reset suppressed (rdr_ap_reset_enable=0)\n");
++				}
+ 				spin_lock_irqsave(&__rdr_module_ops_list_lock, lock_flag);
+ 			} else if ((mask & p_module_ops->s_core_id) &&
+ 				!rdr_syserr_list_empty()) {
+ 				BB_PRINT_PN("reboot later!\n");
