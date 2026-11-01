@@ -1,0 +1,17 @@
+hwbootfail: do not report a boot failure when the timer expires
+
+--- a/drivers/hwbootfail/common/bootfail_timer.c
++++ b/drivers/hwbootfail/common/bootfail_timer.c
+@@ -70,6 +70,12 @@
+ 	struct bootfail_proc_param *pparam = NULL;
+ 	enum bootfail_errorcode errorcode;
+ 	char *detail_info = "";
++	/* Port build: boot cannot complete without a display stack, so the
++	 * bootfail timer would always fire and reboot the device. Keep the
++	 * timer counting but never report a failure. */
++	print_info("port: bootfail timeout ignored\n");
++	return;
++
+ 
+ 	/* for dump trace of init Process. */
+ 	dump_init_log();
