@@ -15,15 +15,22 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
-          submodules: recursive
 
-      - name: ccache
+      - name: Cache ccache
         uses: actions/cache@v4
         with:
           path: ~/.ccache
-          key: ccache-${{ runner.os }}-${{ github.repository }}-${{ hashFiles('patches/**') }}
+          key: ccache-${{ github.repository }}-${{ github.sha }}
           restore-keys: |
-            ccache-${{ runner.os }}-${{ github.repository }}-
+            ccache-${{ github.repository }}-
+
+      - name: Cache build output
+        uses: actions/cache@v4
+        with:
+          path: out
+          key: out-${{ github.repository }}-${{ hashFiles('patches/**') }}
+          restore-keys: |
+            out-${{ github.repository }}-
 
       - name: Install toolchain
         run: |
@@ -37,31 +44,12 @@ jobs:
           sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-12 200
           sudo update-alternatives --install /usr/bin/ld.lld ld.lld /usr/bin/ld.lld-12 200
           clang --version
-
-      - name: Prepare gcc wrapper
-        run: |
-          mkdir -p "$RUNNER_TEMP/ccwrap"
-          cat > "$RUNNER_TEMP/ccwrap/cc" <<'WRAP'
-          #!/bin/bash
-          args=()
-          for a in "$@"; do
-            case "$a" in
-              --target=*|--gcc-toolchain=*|--prefix=*|-Qunused-arguments|-mexecute-only|-mno-global-merge|-fno-addrsig|-no-integrated-as) ;;
-              -Wno-error=*|-Werror=unknown-warning-option|-Wno-unknown-warning-option|-Wno-visibility) ;;
-              *) args+=("$a") ;;
-            esac
-          done
-          exec aarch64-linux-gnu-gcc "${args[@]}" -Wno-error
-          WRAP
-          chmod +x "$RUNNER_TEMP/ccwrap/cc"
-          "$RUNNER_TEMP/ccwrap/cc" --version | head -1
+          aarch64-linux-gnu-gcc --version | head -1
 
       - name: Build kernel
-        env:
-          GCC_WRAPPER: ${{ runner.temp }}/ccwrap/cc
         run: |
           chmod +x patches/build-kernel.sh
-          bash patches/build-kernel.sh
+          time bash patches/build-kernel.sh
 
       - name: Collect artifacts
         run: |
@@ -74,6 +62,6 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: kernel-image-kirin990
+          name: kernel-image
           path: artifacts/
           retention-days: 7
