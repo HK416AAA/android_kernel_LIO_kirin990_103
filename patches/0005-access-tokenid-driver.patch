@@ -1,4 +1,4 @@
-access_tokenid: minimal /dev/access_token_id, token lookup and port stubs
+access_tokenid: minimal /dev/access_token_id with fork inheritance and port stubs
 
 diff --git a/drivers/accesstokenid/Kconfig b/drivers/accesstokenid/Kconfig
 new file mode 100644
@@ -80,7 +80,7 @@ diff --git a/drivers/accesstokenid/access_tokenid.c b/drivers/accesstokenid/acce
 new file mode 100644
 --- /dev/null
 +++ b/drivers/accesstokenid/access_tokenid.c
-@@ -0,0 +1,163 @@
+@@ -0,0 +1,205 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * access_tokenid.c - minimal /dev/access_token_id for the HarmonyOS port.
@@ -100,6 +100,9 @@ new file mode 100644
 +#include <linux/spinlock.h>
 +#include <linux/hashtable.h>
 +#include <linux/uaccess.h>
++#include <linux/pid.h>
++#include <linux/sched/task.h>
++#include <linux/rcupdate.h>
 +#include "access_tokenid.h"
 +
 +struct token_entry {
@@ -123,7 +126,7 @@ new file mode 100644
 +	return NULL;
 +}
 +
-+static u64 token_get(pid_t pid, bool first)
++static u64 token_get_self(pid_t pid, bool first)
 +{
 +	struct token_entry *e;
 +	unsigned long flags;
@@ -134,6 +137,45 @@ new file mode 100644
 +	if (e != NULL)
 +		value = first ? e->first_token : e->token;
 +	spin_unlock_irqrestore(&g_lock, flags);
++	return value;
++}
++
++/* Tokens are inherited across fork/exec: walk the parent chain when the
++ * process itself has no entry (equivalent to the vendor fork hook). */
++static u64 token_get(pid_t pid, bool first)
++{
++	struct task_struct *task = NULL;
++	struct task_struct *parent;
++	u64 value;
++	int depth;
++
++	rcu_read_lock();
++	task = find_task_by_vpid(pid);
++	if (task != NULL)
++		get_task_struct(task);
++	rcu_read_unlock();
++	if (task == NULL)
++		return 0;
++
++	for (depth = 0; depth < 8; depth++) {
++		value = token_get_self(task->tgid, first);
++		if (value != 0)
++			break;
++
++		rcu_read_lock();
++		parent = rcu_dereference(task->real_parent);
++		if (parent != NULL && parent != task)
++			get_task_struct(parent);
++		else
++			parent = NULL;
++		rcu_read_unlock();
++		if (parent == NULL)
++			break;
++		put_task_struct(task);
++		task = parent;
++	}
++
++	put_task_struct(task);
 +	return value;
 +}
 +
