@@ -43,6 +43,11 @@ for tool in clang clang++ ld.lld llvm-ar llvm-nm llvm-objcopy llvm-objdump llvm-
 done
 export PATH="$WRAP:$PATH"
 
+echo "== enable HAL-facing interfaces (dma-buf heaps, sw_sync)"
+for sym in DMABUF_HEAPS DMABUF_HEAPS_SYSTEM DMABUF_HEAPS_CMA SW_SYNC; do
+    scripts/config --file "${OUT_DIR}/.config" -e "$sym" || true
+done
+
 echo "== configure (vendor defconfig)"
 mkdir -p "${OUT_DIR}"
 make ARCH=arm64 O="${OUT_DIR}" CLANG_PREBUILTS_PATH="${CLANG_PREBUILTS_PATH}" merge_kirin990_defconfig
