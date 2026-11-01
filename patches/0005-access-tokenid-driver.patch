@@ -286,7 +286,7 @@ diff --git a/drivers/accesstokenid/portstub.c b/drivers/accesstokenid/portstub.c
 new file mode 100644
 --- /dev/null
 +++ b/drivers/accesstokenid/portstub.c
-@@ -0,0 +1,62 @@
+@@ -0,0 +1,75 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * portstub.c - link-time stand-ins for audio/modem providers that are not built
@@ -349,6 +349,19 @@ new file mode 100644
 +{
 +}
 +EXPORT_SYMBOL(sync_dump);
++
++long da_combine_utils_reg_read(void) { return 0; }
++EXPORT_SYMBOL(da_combine_utils_reg_read);
++long da_combine_utils_reg_write(void) { return 0; }
++EXPORT_SYMBOL(da_combine_utils_reg_write);
++long da_combine_utils_reg_update_bits(void) { return 0; }
++EXPORT_SYMBOL(da_combine_utils_reg_update_bits);
++long da_combine_utils_dump_regs(void) { return 0; }
++EXPORT_SYMBOL(da_combine_utils_dump_regs);
++long da_combine_utils_reg_read_array(void) { return 0; }
++EXPORT_SYMBOL(da_combine_utils_reg_read_array);
++long da_combine_utils_delay_us(void) { return 0; }
++EXPORT_SYMBOL(da_combine_utils_delay_us);
 diff --git a/drivers/Kconfig b/drivers/Kconfig
 --- a/drivers/Kconfig
 +++ b/drivers/Kconfig
