@@ -43,11 +43,6 @@ for tool in clang clang++ ld.lld llvm-ar llvm-nm llvm-objcopy llvm-objdump llvm-
 done
 export PATH="$WRAP:$PATH"
 
-echo "== enable HAL-facing interfaces (dma-buf heaps, sw_sync)"
-for sym in DMABUF_HEAPS DMABUF_HEAPS_SYSTEM DMABUF_HEAPS_CMA SW_SYNC ACCESS_TOKENID PORT_STUBS; do
-    scripts/config --file "${OUT_DIR}/.config" -e "$sym" || true
-done
-
 echo "== configure (vendor defconfig)"
 mkdir -p "${OUT_DIR}"
 make ARCH=arm64 O="${OUT_DIR}" CLANG_PREBUILTS_PATH="${CLANG_PREBUILTS_PATH}" merge_kirin990_defconfig
@@ -61,6 +56,14 @@ DISABLE="HISI_BALONG_MODEM HISI_BALONG_MODEM_HI3650 MODEM_DRIVER BALONG_ESPE \
          DEBUG_INFO DEBUG_INFO_DWARF4 DEBUG_INFO_BTF KALLSYMS_ALL LTO_CLANG LTO_CLANG_THIN"
 for sym in $DISABLE; do
     scripts/config --file "${OUT_DIR}/.config" -d "$sym" || true
+done
+make ARCH=arm64 O="${OUT_DIR}" CLANG_PREBUILTS_PATH="${CLANG_PREBUILTS_PATH}" olddefconfig
+
+echo "== enable HAL-facing interfaces (after defconfig)"
+for sym in DMABUF_HEAPS DMABUF_HEAPS_DEFERRED_FREE DMABUF_HEAPS_PAGE_POOL \
+           DMABUF_HEAPS_SYSTEM DMABUF_HEAPS_CMA SW_SYNC ACCESS_TOKENID \
+           SECURITY_SELINUX_DEVELOP SECURITY_SELINUX_BOOTPARAM; do
+    scripts/config --file "${OUT_DIR}/.config" -e "$sym" || true
 done
 make ARCH=arm64 O="${OUT_DIR}" CLANG_PREBUILTS_PATH="${CLANG_PREBUILTS_PATH}" olddefconfig
 
