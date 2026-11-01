@@ -1,4 +1,4 @@
-access_tokenid: /dev/access_token_id, token inheritance, port stubs and build wiring
+access_tokenid: /dev/access_token_id, token inheritance, stubs and wiring
 
 diff --git a/drivers/accesstokenid/Kconfig b/drivers/accesstokenid/Kconfig
 new file mode 100644
@@ -80,7 +80,7 @@ diff --git a/drivers/accesstokenid/access_tokenid.c b/drivers/accesstokenid/acce
 new file mode 100644
 --- /dev/null
 +++ b/drivers/accesstokenid/access_tokenid.c
-@@ -0,0 +1,205 @@
+@@ -0,0 +1,201 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * access_tokenid.c - minimal /dev/access_token_id for the HarmonyOS port.
@@ -282,15 +282,11 @@ new file mode 100644
 +module_init(access_tokenid_init);
 +module_exit(access_tokenid_exit);
 +MODULE_LICENSE("GPL v2");
-+++ b/drivers/Kconfig
-+source "drivers/accesstokenid/Kconfig"
-+++ b/drivers/Makefile
-+obj-$(CONFIG_ACCESS_TOKENID)	+= accesstokenid/
 diff --git a/drivers/accesstokenid/portstub.c b/drivers/accesstokenid/portstub.c
 new file mode 100644
 --- /dev/null
 +++ b/drivers/accesstokenid/portstub.c
-@@ -0,0 +1,57 @@
+@@ -0,0 +1,62 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * portstub.c - link-time stand-ins for audio/modem providers that are not built
@@ -348,6 +344,12 @@ new file mode 100644
 +long socdsp_dump_panic_log(void) { return 0; }
 +EXPORT_SYMBOL(socdsp_dump_panic_log);
 +
++/* Provided by sync_debug in 4.9; the 5.10 tree drops it. */
++void sync_dump(void)
++{
++}
++EXPORT_SYMBOL(sync_dump);
+diff --git a/drivers/Kconfig b/drivers/Kconfig
 --- a/drivers/Kconfig
 +++ b/drivers/Kconfig
 @@ -12,6 +12,7 @@
@@ -358,6 +360,7 @@ new file mode 100644
  
  source "drivers/bus/Kconfig"
  
+diff --git a/drivers/Makefile b/drivers/Makefile
 --- a/drivers/Makefile
 +++ b/drivers/Makefile
 @@ -9,6 +9,7 @@
