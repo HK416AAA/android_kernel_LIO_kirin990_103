@@ -9,6 +9,7 @@ cd "${REPO_ROOT}"
 
 OUT_DIR="${OUT_DIR:-out}"
 JOBS="${JOBS:-$(nproc)}"
+echo "jobs=${JOBS}"
 
 echo "== applying port patches"
 for p in patches/0*.patch; do
