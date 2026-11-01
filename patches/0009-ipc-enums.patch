@@ -1,0 +1,28 @@
+audio: define the ipc_int_lev/ipc_int_core enums for the port build
+
+--- a/platform_source/audio/drivers/hifi_mailbox/ipcm/bsp_drv_ipc.h
++++ b/platform_source/audio/drivers/hifi_mailbox/ipcm/bsp_drv_ipc.h
+@@ -18,6 +18,23 @@
+ 
+ #ifndef __BSP_DRV_IPC_H__
+ #define __BSP_DRV_IPC_H__
++#ifndef BSP_DRV_IPC_ENUM_DEFINED
++#define BSP_DRV_IPC_ENUM_DEFINED
++/* Port build: the vendor tree relies on these enums being defined by a product
++ * header that is not published. Define them here so the prototypes below have
++ * complete types. */
++enum ipc_int_lev {
++	IPC_INT_LEV_LOW = 0,
++	IPC_INT_LEV_HIGH,
++};
++
++enum ipc_int_core {
++	IPC_CORE_ACPU = 0,
++	IPC_CORE_SOCDSP,
++	IPC_CORE_CCPU,
++};
++#endif
++
+ 
+ #include <linux/io.h>
+ 
