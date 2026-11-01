@@ -48,11 +48,13 @@ mkdir -p "${OUT_DIR}"
 make ARCH=arm64 O="${OUT_DIR}" CLANG_PREBUILTS_PATH="${CLANG_PREBUILTS_PATH}" merge_kirin990_defconfig
 
 echo "== adjust config"
-echo "== disable only the subsystems that need the vendor GCC chain"
-# NOTE: HUAWEI_AUDIO must stay enabled -- it provides the fsa4480/get_phy_addr
-# symbols that other modules link against. Only virtual_voice_proxy fails to
-# compile (its mailbox ids are not in the published tree).
-for sym in HISI_BALONG_MODEM HISI_BALONG_MODEM_HI3650 MODEM_DRIVER BALONG_ESPE VIRTUAL_VOICE_PROXY; do
+echo "== disable the subsystems whose sources need the vendor GCC chain"
+# Modem and audio providers are not buildable with clang and their private
+# headers/config are not published. The kernel links against portstub instead.
+DISABLE="HISI_BALONG_MODEM HISI_BALONG_MODEM_HI3650 MODEM_DRIVER BALONG_ESPE \
+         VIRTUAL_VOICE_PROXY SOUND USB_PROXY_HCD WERROR \
+         DEBUG_INFO DEBUG_INFO_DWARF4 DEBUG_INFO_BTF KALLSYMS_ALL LTO_CLANG LTO_CLANG_THIN"
+for sym in $DISABLE; do
     scripts/config --file "${OUT_DIR}/.config" -d "$sym" || true
 done
 make ARCH=arm64 O="${OUT_DIR}" CLANG_PREBUILTS_PATH="${CLANG_PREBUILTS_PATH}" olddefconfig
