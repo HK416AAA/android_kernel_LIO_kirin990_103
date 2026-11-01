@@ -44,7 +44,7 @@ done
 export PATH="$WRAP:$PATH"
 
 echo "== enable HAL-facing interfaces (dma-buf heaps, sw_sync)"
-for sym in DMABUF_HEAPS DMABUF_HEAPS_SYSTEM DMABUF_HEAPS_CMA SW_SYNC; do
+for sym in DMABUF_HEAPS DMABUF_HEAPS_SYSTEM DMABUF_HEAPS_CMA SW_SYNC ACCESS_TOKENID PORT_STUBS; do
     scripts/config --file "${OUT_DIR}/.config" -e "$sym" || true
 done
 
