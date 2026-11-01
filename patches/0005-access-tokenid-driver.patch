@@ -1,4 +1,4 @@
-access_tokenid: add a minimal /dev/access_token_id for the HarmonyOS port
+access_tokenid: minimal /dev/access_token_id, token lookup and port stubs
 
 diff --git a/drivers/accesstokenid/Kconfig b/drivers/accesstokenid/Kconfig
 new file mode 100644
@@ -13,6 +13,13 @@ new file mode 100644
 +	  Provides /dev/access_token_id, the per-process access token store used by
 +	  the HarmonyOS access token kit. Port build: the public tree does not ship
 +	  the vendor driver, this is a minimal replacement (token is kept per pid).
+diff --git a/drivers/accesstokenid/Makefile b/drivers/accesstokenid/Makefile
+new file mode 100644
+--- /dev/null
++++ b/drivers/accesstokenid/Makefile
+@@ -0,0 +1,2 @@
++# SPDX-License-Identifier: GPL-2.0
++obj-$(CONFIG_ACCESS_TOKENID)	+= access_tokenid.o portstub.o
 diff --git a/drivers/accesstokenid/access_tokenid.h b/drivers/accesstokenid/access_tokenid.h
 new file mode 100644
 --- /dev/null
@@ -73,7 +80,7 @@ diff --git a/drivers/accesstokenid/access_tokenid.c b/drivers/accesstokenid/acce
 new file mode 100644
 --- /dev/null
 +++ b/drivers/accesstokenid/access_tokenid.c
-@@ -0,0 +1,151 @@
+@@ -0,0 +1,163 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * access_tokenid.c - minimal /dev/access_token_id for the HarmonyOS port.
@@ -222,36 +229,21 @@ new file mode 100644
 +	misc_deregister(&access_tokenid_dev);
 +}
 +
++
++/* Look up the token registered for `pid`; used by the binder extension. */
++u64 access_tokenid_peek(pid_t pid)
++{
++	return token_get(pid, false);
++}
++EXPORT_SYMBOL(access_tokenid_peek);
++
 +module_init(access_tokenid_init);
 +module_exit(access_tokenid_exit);
 +MODULE_LICENSE("GPL v2");
---- a/drivers/Kconfig
 +++ b/drivers/Kconfig
-@@ -12,6 +12,7 @@
- 
- 
- source "drivers/base/Kconfig"
 +source "drivers/accesstokenid/Kconfig"
- 
- source "drivers/bus/Kconfig"
- 
---- a/drivers/Makefile
 +++ b/drivers/Makefile
-@@ -8,6 +8,7 @@
- 
- obj-y				+= irqchip/
- obj-y				+= bus/
 +obj-$(CONFIG_ACCESS_TOKENID)	+= accesstokenid/
- 
- obj-$(CONFIG_GENERIC_PHY)	+= phy/
- 
-diff --git a/drivers/accesstokenid/Makefile b/drivers/accesstokenid/Makefile
-new file mode 100644
---- /dev/null
-+++ b/drivers/accesstokenid/Makefile
-@@ -0,0 +1,2 @@
-+# SPDX-License-Identifier: GPL-2.0
-+obj-$(CONFIG_ACCESS_TOKENID)	+= access_tokenid.o portstub.o
 diff --git a/drivers/accesstokenid/portstub.c b/drivers/accesstokenid/portstub.c
 new file mode 100644
 --- /dev/null
