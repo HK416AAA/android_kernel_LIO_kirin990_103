@@ -1,0 +1,124 @@
+binder: HarmonyOS 7 extensions (feature set, access token, extended error)
+
+--- a/include/uapi/linux/android/binder.h
++++ b/include/uapi/linux/android/binder.h
+@@ -320,6 +320,22 @@
+ #define BINDER_FREEZE			_IOW('b', 14, struct binder_freeze_info)
+ #define BINDER_GET_FROZEN_INFO		_IOWR('b', 15, struct binder_frozen_status_info)
+ #define BINDER_ENABLE_ONEWAY_SPAM_DETECTION	_IOW('b', 16, __u32)
++#define BINDER_GET_EXTENDED_ERROR	_IOWR('b', 17, struct binder_extended_error)
++
++struct binder_extended_error {
++	__u32 error;
++	__u32 unused[3];
++};
++
++/* HarmonyOS extensions (access token plumbing). */
++struct hmos_access_token {
++	__u64 sender;
++	__u64 first;
++	__u64 reserved[2];
++};
++
++#define HMOS_BINDER_FEATURE_SET		_IOWR('b', 30, __u64)
++#define HMOS_BINDER_GET_ACCESS_TOKEN	_IOWR('b', 31, struct hmos_access_token)
+ 
+ /*
+  * NOTE: Two special error codes you should check for when calling
+--- a/drivers/android/binder_internal.h
++++ b/drivers/android/binder_internal.h
+@@ -13,6 +13,7 @@
+ #include <linux/types.h>
+ #include <linux/uidgid.h>
+ #include <uapi/linux/android/binderfs.h>
++#include <uapi/linux/android/binder.h>
+ #include "binder_alloc.h"
+ 
+ struct binder_context {
+@@ -562,6 +563,7 @@
+ 	struct list_head waiting_thread_node;
+ 	int pid;
+ 	int looper;              /* only modified by this thread */
++	struct hmos_access_token hmos_tokens;
+ #ifdef CONFIG_HW_BINDER_SCHED
+ 	unsigned int flag;       /* only modified by this thread */
+ #endif
+@@ -599,6 +601,8 @@
+ 	int debug_id;
+ 	struct binder_work work;
+ 	struct binder_thread *from;
++	u64 hmos_sender_token;
++	u64 hmos_first_token;
+ #ifdef CONFIG_HW_QOS_THREAD
+ 	struct binder_thread *async_from;
+ #endif
+--- a/drivers/android/binder.c
++++ b/drivers/android/binder.c
+@@ -77,6 +77,10 @@
+ #include <asm/cacheflush.h>
+ 
+ #include "binder_internal.h"
++
++#ifdef CONFIG_ACCESS_TOKENID
++extern u64 access_tokenid_peek(pid_t pid);
++#endif
+ #include "binder_trace.h"
+ #include <trace/hooks/binder.h>
+ 
+@@ -3719,6 +3723,10 @@
+ #endif
+ 	}
+ 	t->sender_euid = task_euid(proc->tsk);
++#ifdef CONFIG_ACCESS_TOKENID
++	t->hmos_sender_token = access_tokenid_peek(current->tgid);
++	t->hmos_first_token = t->hmos_sender_token;
++#endif
+ 	t->to_proc = target_proc;
+ 	t->to_thread = target_thread;
+ 	t->code = tr->code;
+@@ -5408,6 +5416,8 @@
+ 			return -EFAULT;
+ 		}
+ 		ptr += trsize;
++		thread->hmos_tokens.sender = t->hmos_sender_token;
++		thread->hmos_tokens.first = t->hmos_first_token;
+ 
+ 		trace_binder_transaction_received(t);
+ 		binder_stat_br(proc, thread, cmd);
+@@ -6292,6 +6302,36 @@
+ 		binder_inner_proc_lock(proc);
+ 		proc->oneway_spam_detection_enabled = (bool)enable;
+ 		binder_inner_proc_unlock(proc);
++		break;
++	}
++	case HMOS_BINDER_FEATURE_SET: {
++		u64 features = 1; /* ACCESS_TOKENID supported */
++
++		pr_info_once("port: binder FEATURE_SET queried\n");
++		if (copy_to_user(ubuf, &features, sizeof(features))) {
++			ret = -EFAULT;
++			goto err;
++		}
++		break;
++	}
++	case HMOS_BINDER_GET_ACCESS_TOKEN:
++		pr_info_once("port: binder GET_ACCESS_TOKEN sender=%llu first=%llu\n",
++			     (unsigned long long)thread->hmos_tokens.sender,
++			     (unsigned long long)thread->hmos_tokens.first);
++		if (copy_to_user(ubuf, &thread->hmos_tokens,
++				 sizeof(thread->hmos_tokens))) {
++			ret = -EFAULT;
++			goto err;
++		}
++		break;
++	case BINDER_GET_EXTENDED_ERROR: {
++		struct binder_extended_error ee;
++
++		memset(&ee, 0, sizeof(ee));
++		if (copy_to_user(ubuf, &ee, sizeof(ee))) {
++			ret = -EFAULT;
++			goto err;
++		}
+ 		break;
+ 	}
+ #ifdef CONFIG_HW_BINDER_SCHED
