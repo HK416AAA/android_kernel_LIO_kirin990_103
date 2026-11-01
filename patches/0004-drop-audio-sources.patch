@@ -1,0 +1,13 @@
+platform_source: keep the audio directory but build nothing from it
+
+--- a/platform_source/audio/Makefile
++++ b/platform_source/audio/Makefile
+@@ -1,6 +1,2 @@
+-
+-obj-y += drivers/
+-obj-y += sound/
+-
+-menuconfig:
+-	cd ../..;make ARCH=arm64 menuconfig KBUILD_KCONFIG=platform_source/audio/Kconfig KCONFIG_CONFIG=platform_source/audio/.config
++# Port build: this subtree only compiles with the vendor GCC chain.
++obj-y :=
