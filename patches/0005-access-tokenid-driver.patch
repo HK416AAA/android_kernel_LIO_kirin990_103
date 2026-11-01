@@ -1,4 +1,4 @@
-access_tokenid: minimal /dev/access_token_id with fork inheritance and port stubs
+access_tokenid: /dev/access_token_id, token inheritance, port stubs and build wiring
 
 diff --git a/drivers/accesstokenid/Kconfig b/drivers/accesstokenid/Kconfig
 new file mode 100644
@@ -348,3 +348,23 @@ new file mode 100644
 +long socdsp_dump_panic_log(void) { return 0; }
 +EXPORT_SYMBOL(socdsp_dump_panic_log);
 +
+--- a/drivers/Kconfig
++++ b/drivers/Kconfig
+@@ -12,6 +12,7 @@
+ 
+ 
+ source "drivers/base/Kconfig"
++source "drivers/accesstokenid/Kconfig"
+ 
+ source "drivers/bus/Kconfig"
+ 
+--- a/drivers/Makefile
++++ b/drivers/Makefile
+@@ -9,6 +9,7 @@
+ obj-y				+= irqchip/
+ obj-y				+= bus/
+ 
++obj-$(CONFIG_ACCESS_TOKENID)	+= accesstokenid/
+ obj-$(CONFIG_GENERIC_PHY)	+= phy/
+ 
+ # GPIO must come after pinctrl as gpios may need to mux pins etc
