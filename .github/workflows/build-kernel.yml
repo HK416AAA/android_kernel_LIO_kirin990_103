@@ -15,6 +15,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
+          submodules: recursive
 
       - name: Cache ccache
         uses: actions/cache@v4
