@@ -1,0 +1,29 @@
+binder: let a new process take over when the previous context manager died
+
+--- a/drivers/android/binder.c
++++ b/drivers/android/binder.c
+@@ -5828,9 +5828,21 @@
+ 
+ 	mutex_lock(&context->context_mgr_node_lock);
+ 	if (context->binder_context_mgr_node) {
+-		pr_err("BINDER_SET_CONTEXT_MGR already set\n");
+-		ret = -EBUSY;
+-		goto out;
++		struct binder_proc *mgr_proc =
++			context->binder_context_mgr_node->proc;
++
++		/* Port build: init restarts samgr as soon as it exits, while the
++		 * old binder proc release is still queued. Allow the new process
++		 * to take over when the previous manager is already dead. */
++		if (mgr_proc != NULL && mgr_proc->is_dead) {
++			pr_info("port: dead context mgr %d released, take over\n",
++				mgr_proc->pid);
++			context->binder_context_mgr_node = NULL;
++		} else {
++			pr_err("BINDER_SET_CONTEXT_MGR already set\n");
++			ret = -EBUSY;
++			goto out;
++		}
+ 	}
+ 	ret = security_binder_set_context_mgr(binder_get_cred(proc));
+ 	if (ret < 0)
